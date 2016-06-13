@@ -9,3 +9,4 @@ class ResultLoggerConstants:
     FIELD_RESULTS = 'results'
 
     OK = "OK"
+    END = "END"
