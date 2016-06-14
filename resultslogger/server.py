@@ -1,10 +1,22 @@
-from flask import Flask, request
-from resultslogger.constants import ResultLoggerConstants
 import json
-import sys
 import os
+import sys
+
+from flask import Flask, request
+import pystache
+
+from resultslogger.constants import ResultLoggerConstants
+from resultslogger.experimentqueue import ExperimentQueue
+
+
+def load_template(relative_filename: str):
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), relative_filename)) as f:
+        return pystache.parse(f.read())
 
 class ResultsLoggerServer:
+
+    PAGE_TEMPLATE = load_template("resources/page.mustache")
+
     def __init__(self, list_of_experiments_path: str, results_columns_path: str, output_filepath: str):
         """
 
@@ -14,12 +26,14 @@ class ResultsLoggerServer:
         :param lease_timout_secs: the number of secs that a lease times out. Defaults to 2 days
         """
         self.__app = Flask(__name__)
+        self.__queue = ExperimentQueue(list_of_experiments_path)
+
+        self.__renderer = pystache.Renderer()
 
         @self.__app.route(ResultLoggerConstants.ROUTE_LEASE_EXPERIMENT, methods=['POST'])
         def lease_next_experiment():
            client = request.form[ResultLoggerConstants.FIELD_CLIENT]
-           # TODO: Get parameters and store lease
-           params = dict(a=1, b=.2)
+           params = self.__queue.lease_new(client)
            return json.dumps(params)
 
         @self.__app.route(ResultLoggerConstants.ROUTE_STORE_EXPERIMENT, methods=['POST'])
@@ -36,6 +50,12 @@ class ResultsLoggerServer:
         def show_summary_html():
             # TODO: Pivot and Export Pandas frame to html and return content
             return "TODO"
+
+        @self.__app.route(ResultLoggerConstants.ROUTE_EXPERIMENTS_QUEUE)
+        def experiment_queue_html():
+            return self.__renderer.render(self.PAGE_TEMPLATE,
+                                          {'title': 'Experiments Queue',
+                                           'body': self.__queue.all_experiments.to_html(classes=['table', 'table-striped', 'table-condensed', 'table-hover'])})
 
         self.__output_filepath = output_filepath
         with open(results_columns_path) as f:

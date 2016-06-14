@@ -3,6 +3,7 @@ class ResultLoggerConstants:
     ROUTE_LEASE_EXPERIMENT = '/lease_next_experiment'
     ROUTE_STORE_EXPERIMENT = '/store_experiment'
     ROUTE_EXPERIMENTS_SUMMARY = '/results'
+    ROUTE_EXPERIMENTS_QUEUE = '/queue'
 
     FIELD_CLIENT = 'field'
     FIELD_PARAMETERS = 'parameters'
