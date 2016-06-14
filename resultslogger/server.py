@@ -5,7 +5,7 @@ import sys
 import os
 
 class ResultsLoggerServer:
-    def __init__(self, list_of_experiments: str, results_columns_path: str, output_filepath: str, lease_timout_secs: int=172800):
+    def __init__(self, list_of_experiments_path: str, results_columns_path: str, output_filepath: str):
         """
 
         :param list_of_experiments:
@@ -41,8 +41,6 @@ class ResultsLoggerServer:
         with open(results_columns_path) as f:
             self.__result_columns = f.read().split()
 
-        with open(list_of_experiments) as f:
-            pass # TODO: Load into a dataframe that allows lease logging
 
 
     def run(self):

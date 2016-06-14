@@ -8,7 +8,7 @@ from resultslogger.constants import ResultLoggerConstants
 
 
 class ResultsLoggerClient:
-    def __init__(self, servername):
+    def __init__(self, servername: str):
         self.__servername = servername
 
     @property
@@ -19,7 +19,7 @@ class ResultsLoggerClient:
         """
         return str(socket.gethostname()) + "-pid:" + str(os.getpid())
 
-    def lease_next_experiment(self):
+    def lease_next_experiment(self)-> dict:
         """
         Lease a new experiment to this client
         :return: a dict with the necessary parameters
@@ -31,7 +31,7 @@ class ResultsLoggerClient:
             return None
         return r.json()
 
-    def store_experiment_results(self, parameters, results):
+    def store_experiment_results(self, parameters: dict, results: dict):
         """
         Store the results of an experiment.
         :param parameters: the used parameters
