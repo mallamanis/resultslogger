@@ -47,7 +47,8 @@ class ResultsLoggerClient:
     def compute_in_loop(self, result_computer, output_stream=sys.stdout):
         """
         Keep asking and running new experiments, until there are no more experiments available.
-        :param result_computer: a lambda that accepts a dict of parameters and returns a dict of results
+        :param result_computer: a lambda that accepts a dict of parameters and returns a dict of results. The method
+        receieves a copy of the parameters.
         :param output_stream: the file to output (default stdout)
         """
         while True:
@@ -64,5 +65,6 @@ class ResultsLoggerClient:
 
 
 cl = ResultsLoggerClient("http://localhost:5000")
-print(cl.lease_next_experiment())
-cl.store_experiment_results({'a':1, 'b':2}, {'q':3, 'f':4.2})
+params = cl.lease_next_experiment()
+print(params)
+cl.store_experiment_results(params, {'q':3, 'f':4.2})

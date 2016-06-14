@@ -69,5 +69,6 @@ class ExperimentQueue:
             print("Experiment returned from non-leased (or expired) client")
 
         self.__all_experiments.status.loc[id] = self.DONE
-        self.__all_experiments.lease_time.loc[id] = int(time.time())
+        self.__all_experiments.lease_time.loc[id] = pd.Timestamp('now')
         self.__all_experiments.lease_client.loc[id] = client
+        # TODO: Add duration of experiment

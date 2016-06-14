@@ -41,15 +41,22 @@ class ResultsLoggerServer:
             client = request.form[ResultLoggerConstants.FIELD_CLIENT]
             experiment_parameters = request.form[ResultLoggerConstants.FIELD_PARAMETERS]
             results = request.form[ResultLoggerConstants.FIELD_RESULTS]
-            print(client, json.loads(experiment_parameters), json.loads(results))
-            # TODO: Store experiments appropriately
+            parameters = json.loads(experiment_parameters)
+            print(parameters)
+            results = json.loads(results)
+
+            # TODO: Store experiments results appropriately
+
+            self.__queue.complete(parameters, client)
             self.autosave()
             return ResultLoggerConstants.OK
 
         @self.__app.route(ResultLoggerConstants.ROUTE_EXPERIMENTS_SUMMARY)
         def show_summary_html():
             # TODO: Pivot and Export Pandas frame to html and return content
-            return "TODO"
+            return self.__renderer.render(self.PAGE_TEMPLATE,
+                                          {'title': 'Results Summary',
+                                           'body': 'TODO!'})
 
         @self.__app.route(ResultLoggerConstants.ROUTE_EXPERIMENTS_QUEUE)
         def experiment_queue_html():
@@ -64,7 +71,7 @@ class ResultsLoggerServer:
 
 
     def run(self):
-        self.__app.run()
+        self.__app.run(host='0.0.0.0')
 
     def autosave(self):
         pass  # TODO: save to .csv .pkl and self
