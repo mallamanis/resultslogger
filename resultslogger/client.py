@@ -25,7 +25,7 @@ class ResultsLoggerClient:
         :return: a dict with the necessary parameters
         """
         r = requests.post(self.__servername + ResultLoggerConstants.ROUTE_LEASE_EXPERIMENT,
-                          data={ResultLoggerConstants.FIELD_CLIENT:self.client_name})
+                          data={ResultLoggerConstants.FIELD_CLIENT: self.client_name})
         assert r.status_code == requests.codes.ok, r
         if r.text == ResultLoggerConstants.END:
             return None
