@@ -1,4 +1,5 @@
 import json
+import traceback
 
 import pandas as pd
 
@@ -53,18 +54,18 @@ class ExperimentQueue:
 
         #Pick the first non-leased element
         leased_params = json.loads(available.iloc[0].to_json())
-        selected_id = available.index[0]
+        selected_id = int(available.index[0])
 
         if self.__all_experiments.status.loc[selected_id] == self.LEASED:
             print("Re-leasing experiment %s since it expired" % selected_id)
-        self.__all_experiments.status.loc[selected_id] = self.LEASED
-        self.__all_experiments.lease_time.loc[selected_id] = pd.Timestamp('now')
-        self.__all_experiments.client.loc[selected_id] = client_name
+
+        self.__all_experiments.loc[selected_id, 'status'] = self.LEASED
+        self.__all_experiments.loc[selected_id, 'lease_time'] = pd.Timestamp('now')
+        self.__all_experiments.loc[selected_id, 'client'] = client_name
 
         for k in self.__non_parameter_fields:
             del leased_params[k]
-
-        return leased_params, int(selected_id)
+        return leased_params, selected_id
 
     def complete(self, experiment_id: int, parameters: dict, client: str):
         selected_experiment = self.__all_experiments.iloc[experiment_id]
@@ -77,7 +78,7 @@ class ExperimentQueue:
         if selected_experiment.client != client:
             print("Experiment returned from non-leased (or expired) client")
 
-        self.__all_experiments.status.iloc[experiment_id] = self.DONE
-        self.__all_experiments.lease_time.iloc[experiment_id] = pd.Timestamp('now')
-        self.__all_experiments.client.iloc[experiment_id] = client
+        self.__all_experiments.loc[experiment_id, 'status'] = self.DONE
+        self.__all_experiments.loc[experiment_id, 'lease_time'] = pd.Timestamp('now')
+        self.__all_experiments.loc[experiment_id, 'client'] = client
         # TODO: Add duration of experiment
