@@ -39,19 +39,20 @@ class ExperimentQueue:
 
     def lease_new(self, client_name: str)-> dict:
         """
-        Lease a new experiment lock
+        Lease a new experiment lock. Select first any waiting experiments and then re-lease expired ones
         :param client_name: The name of the leasing client
         :return: a tuple (id, parameters) or None if nothing is available
         """
-        available = self.__all_experiments[(self.all_experiments.status == self.WAITING) |
-                                           ((self.__all_experiments.status == self.LEASED) &
-                                            (self.__all_experiments.lease_time + self.__lease_duration < pd.Timestamp('now'))
-                                            )]
+        available = self.__all_experiments[self.all_experiments.status == self.WAITING]
+
+        if len(available) == 0:
+            available = self.__all_experiments[(self.__all_experiments.status == self.LEASED) &
+             (self.__all_experiments.lease_time + self.__lease_duration < pd.Timestamp('now'))]
 
         if len(available) == 0:
             return None
 
-        #Pick the first element
+        #Pick the first non-leased element
         leased_params = json.loads(available.iloc[0].to_json())
         selected_id = available.iloc[0].id
         if self.__all_experiments.status.loc[selected_id] == self.LEASED:
