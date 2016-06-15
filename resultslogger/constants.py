@@ -5,6 +5,7 @@ class ResultLoggerConstants:
     ROUTE_EXPERIMENTS_SUMMARY = '/results'
     ROUTE_EXPERIMENTS_QUEUE = '/queue'
 
+    FIELD_EXPERIMENT_ID = 'experimentid'
     FIELD_CLIENT = 'field'
     FIELD_PARAMETERS = 'parameters'
     FIELD_RESULTS = 'results'

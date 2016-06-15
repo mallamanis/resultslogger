@@ -1,6 +1,7 @@
-import pandas as pd
-import time
 import json
+
+import pandas as pd
+
 
 class ExperimentQueue:
 
@@ -13,14 +14,12 @@ class ExperimentQueue:
         :param list_of_experiments_path: The path to a csv file containing all possible experiments.
         """
         self.__all_experiments = pd.read_csv(list_of_experiments_path)
-        self.__all_experiments['id'] = pd.Series(data=list(range(len(self.all_experiments))))
-        self.__all_experiments.set_index(['id'])
         self.__all_experiments['status'] = [self.WAITING] * len(self.__all_experiments)
         self.__all_experiments['lease_time'] = pd.Series(pd.Timestamp(float('NaN')))
-        self.__all_experiments['lease_client'] = [""] * len(self.__all_experiments)
+        self.__all_experiments['client'] = [""] * len(self.__all_experiments)
         self.__lease_duration = pd.to_timedelta(lease_timout)
 
-        self.__non_parameter_fields = ['status', 'lease_time', 'lease_client']
+        self.__non_parameter_fields = ['status', 'lease_time', 'client']
 
     @property
     def all_experiments(self):
@@ -37,7 +36,7 @@ class ExperimentQueue:
     def leased_percent(self):
         return float(len(self.__all_experiments[self.all_experiments.status == self.LEASED])) / len(self.__all_experiments)
 
-    def lease_new(self, client_name: str)-> dict:
+    def lease_new(self, client_name: str) -> tuple:
         """
         Lease a new experiment lock. Select first any waiting experiments and then re-lease expired ones
         :param client_name: The name of the leasing client
@@ -54,30 +53,31 @@ class ExperimentQueue:
 
         #Pick the first non-leased element
         leased_params = json.loads(available.iloc[0].to_json())
-        selected_id = available.iloc[0].id
+        selected_id = available.index[0]
+
         if self.__all_experiments.status.loc[selected_id] == self.LEASED:
             print("Re-leasing experiment %s since it expired" % selected_id)
         self.__all_experiments.status.loc[selected_id] = self.LEASED
         self.__all_experiments.lease_time.loc[selected_id] = pd.Timestamp('now')
-        self.__all_experiments.lease_client.loc[selected_id] = client_name
+        self.__all_experiments.client.loc[selected_id] = client_name
 
         for k in self.__non_parameter_fields:
             del leased_params[k]
 
-        return leased_params
+        return leased_params, int(selected_id)
 
-
-    def complete(self, parameters, client: str):
-        id = parameters['id']
-        selected_experiment = self.__all_experiments.iloc[id]
+    def complete(self, experiment_id: int, parameters: dict, client: str):
+        selected_experiment = self.__all_experiments.iloc[experiment_id]
         original_params = selected_experiment.to_dict()
+
         for k in self.__non_parameter_fields:
             del original_params[k]
         assert original_params == parameters, "Experiment Parameters do not match!"
-        if self.__all_experiments.iloc[id].lease_client != client:
+
+        if selected_experiment.client != client:
             print("Experiment returned from non-leased (or expired) client")
 
-        self.__all_experiments.status.loc[id] = self.DONE
-        self.__all_experiments.lease_time.loc[id] = pd.Timestamp('now')
-        self.__all_experiments.lease_client.loc[id] = client
+        self.__all_experiments.status.iloc[experiment_id] = self.DONE
+        self.__all_experiments.lease_time.iloc[experiment_id] = pd.Timestamp('now')
+        self.__all_experiments.client.iloc[experiment_id] = client
         # TODO: Add duration of experiment

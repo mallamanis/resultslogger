@@ -29,17 +29,19 @@ class ResultsLoggerClient:
         assert r.status_code == requests.codes.ok, r
         if r.text == ResultLoggerConstants.END:
             return None
-        return r.json()
+        data = r.json()
+        return data['experiment_id'], data['parameters']
 
-    def store_experiment_results(self, parameters: dict, results: dict):
+    def store_experiment_results(self, experiment_id: int, parameters: dict, results: dict):
         """
         Store the results of an experiment.
         :param parameters: the used parameters
         :param results: the results
         """
-        data = {ResultLoggerConstants.FIELD_CLIENT:self.client_name,
-                ResultLoggerConstants.FIELD_PARAMETERS:json.dumps(parameters),
-                ResultLoggerConstants.FIELD_RESULTS:json.dumps(results)}
+        data = {ResultLoggerConstants.FIELD_CLIENT: self.client_name,
+                ResultLoggerConstants.FIELD_PARAMETERS: json.dumps(parameters),
+                ResultLoggerConstants.FIELD_RESULTS: json.dumps(results),
+                ResultLoggerConstants.FIELD_EXPERIMENT_ID: experiment_id}
         r = requests.post(self.__servername + ResultLoggerConstants.ROUTE_STORE_EXPERIMENT, data=data)
         assert r.status_code == requests.codes.ok, r.content
         assert r.text == ResultLoggerConstants.OK
@@ -65,6 +67,7 @@ class ResultsLoggerClient:
 
 
 cl = ResultsLoggerClient("http://localhost:5000")
-params = cl.lease_next_experiment()
+experiment_id, params = cl.lease_next_experiment()
+print(experiment_id)
 print(params)
-cl.store_experiment_results(params, {'q':3, 'f':4.2})
+cl.store_experiment_results(experiment_id, params, {'q':3, 'f':4.2})

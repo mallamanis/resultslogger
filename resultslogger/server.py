@@ -34,21 +34,26 @@ class ResultsLoggerServer:
         @self.__app.route(ResultLoggerConstants.ROUTE_LEASE_EXPERIMENT, methods=['POST'])
         def lease_next_experiment():
            client = request.form[ResultLoggerConstants.FIELD_CLIENT]
-           params = self.__queue.lease_new(client)
-           return json.dumps(params)
+           next_lease = self.__queue.lease_new(client)
+           if next_lease is None:
+               return ResultLoggerConstants.END
+           params, experiment_id = next_lease
+           return json.dumps(dict(parameters=params, experiment_id=experiment_id))
+
 
         @self.__app.route(ResultLoggerConstants.ROUTE_STORE_EXPERIMENT, methods=['POST'])
         def store_experiment():
             client = request.form[ResultLoggerConstants.FIELD_CLIENT]
             experiment_parameters = request.form[ResultLoggerConstants.FIELD_PARAMETERS]
             results = request.form[ResultLoggerConstants.FIELD_RESULTS]
+            experiment_id = request.form[ResultLoggerConstants.FIELD_EXPERIMENT_ID]
             parameters = json.loads(experiment_parameters)
-            print(parameters)
+
             results = json.loads(results)
 
             # TODO: Store experiments results appropriately
 
-            self.__queue.complete(parameters, client)
+            self.__queue.complete(int(experiment_id), parameters, client)
             self.autosave()
             return ResultLoggerConstants.OK
 
