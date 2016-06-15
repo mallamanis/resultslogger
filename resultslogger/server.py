@@ -17,7 +17,7 @@ class ResultsLoggerServer:
 
     PAGE_TEMPLATE = load_template("resources/page.mustache")
 
-    def __init__(self, list_of_experiments_path: str, results_columns_path: str, output_filepath: str):
+    def __init__(self, experiment_name: str, list_of_experiments_path: str, results_columns_path: str, output_filepath: str):
         """
 
         :param list_of_experiments:
@@ -29,6 +29,7 @@ class ResultsLoggerServer:
         self.__queue = ExperimentQueue(list_of_experiments_path)
 
         self.__renderer = pystache.Renderer()
+        self.__experiment_name = experiment_name
 
         @self.__app.route(ResultLoggerConstants.ROUTE_LEASE_EXPERIMENT, methods=['POST'])
         def lease_next_experiment():
@@ -56,13 +57,22 @@ class ResultsLoggerServer:
             # TODO: Pivot and Export Pandas frame to html and return content
             return self.__renderer.render(self.PAGE_TEMPLATE,
                                           {'title': 'Results Summary',
-                                           'body': 'TODO!'})
+                                           'experiment_name' : self.__experiment_name,
+                                           'body': 'TODO!',
+                                           'in_results': True})
 
         @self.__app.route(ResultLoggerConstants.ROUTE_EXPERIMENTS_QUEUE)
         def experiment_queue_html():
+            pct_completed = self.__queue.completed_percent * 100
+            pct_leased = self.__queue.leased_percent * 100
             return self.__renderer.render(self.PAGE_TEMPLATE,
                                           {'title': 'Experiments Queue',
-                                           'body': self.__queue.all_experiments.to_html(classes=['table', 'table-striped', 'table-condensed', 'table-hover'])})
+                                           'experiment_name' : self.__experiment_name,
+                                           'body': self.__queue.all_experiments.to_html(classes=['table', 'table-striped', 'table-condensed', 'table-hover']),
+                                           'progress': pct_completed + pct_leased > 0,
+                                           'progress_complete': int(pct_completed) if pct_completed > 0 else False,
+                                           'progress_leased': int(pct_leased) if pct_leased > 0 else False,
+                                           'in_queue': True})
 
         self.__output_filepath = output_filepath
         with open(results_columns_path) as f:
@@ -78,16 +88,16 @@ class ResultsLoggerServer:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 4:
-        print("Usage <listOfExperiments.csv> <resultColumns> <outputPkl>")
+    if len(sys.argv) != 5:
+        print("Usage <experimentName> <listOfExperiments.csv> <resultColumns> <outputPkl>")
         sys.exit(-1)
-    list_of_experiments_csv_path = sys.argv[1]
+    list_of_experiments_csv_path = sys.argv[2]
     assert os.path.exists(list_of_experiments_csv_path)
 
-    result_columns_path = sys.argv[2]
+    result_columns_path = sys.argv[3]
     assert os.path.exists(result_columns_path)
 
-    output_filepath = sys.argv[3]
+    output_filepath = sys.argv[4]
 
-    logger = ResultsLoggerServer(list_of_experiments_csv_path, result_columns_path, output_filepath)
+    logger = ResultsLoggerServer(sys.argv[1], list_of_experiments_csv_path, result_columns_path, output_filepath)
     logger.run()

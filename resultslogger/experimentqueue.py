@@ -29,6 +29,14 @@ class ExperimentQueue:
     def __str__(self):
         return str(self.__all_experiments)
 
+    @property
+    def completed_percent(self):
+        return float(len(self.__all_experiments[self.all_experiments.status == self.DONE])) / len(self.__all_experiments)
+
+    @property
+    def leased_percent(self):
+        return float(len(self.__all_experiments[self.all_experiments.status == self.LEASED])) / len(self.__all_experiments)
+
     def lease_new(self, client_name: str)-> dict:
         """
         Lease a new experiment lock

@@ -1,6 +1,6 @@
 <html>
 <head>
-	<title>{{title}}</title>
+	<title>{{title}} - {{experiment_name}} </title>
 	<!-- Latest compiled and minified CSS -->
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
 
@@ -11,8 +11,37 @@
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
 </head>
 <body>
-	<h1>{{title}}</h1>
-	<hr/>
+    <nav class="navbar navbar-default">
+      <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <span class="navbar-brand">{{experiment_name}}</span>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav">
+            <li {{#in_queue}}class="active"{{/in_queue}}><a href="/queue">Queue</a></li>
+            <li {{#in_results}}class="active"{{/in_results}}><a href="/results">Results</a></li>
+          </ul>
+
+        </div><!-- /.navbar-collapse -->
+      </div><!-- /.container-fluid -->
+    </nav>
+    {{#progress}}
+    <div class="progress">
+        {{#progress_complete}}
+          <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="{{progress_complete}}" aria-valuemin="0" aria-valuemax="100" style="width: {{progress_complete}}%;">
+            {{progress_complete}}% Finished
+          </div>
+        {{/progress_complete}}
+        {{#progress_leased}}
+          <div class="progress-bar progress-bar-warning progress-bar-striped" role="progressbar" aria-valuenow="{{progress_leased}}" aria-valuemin="0" aria-valuemax="100" style="width: {{progress_leased}}%;">
+            {{progress_leased}}% Leased
+          </div>
+        {{/progress_leased}}
+    </div>
+    {{/progress}}
 	{{{body}}}
 </body>
 </html>
