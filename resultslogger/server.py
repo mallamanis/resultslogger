@@ -80,9 +80,9 @@ class ResultsLoggerServer:
                                            'in_queue': True})
 
         self.__output_filepath = output_filepath
+
         with open(results_columns_path) as f:
             self.__result_columns = f.read().split()
-
 
 
     def run(self):

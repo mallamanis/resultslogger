@@ -1,29 +1,35 @@
 import json
-import traceback
 
 import pandas as pd
 
 
 class ExperimentQueue:
+    """
+    A queue of experiments. Each experiment may have been leased, be waiting for a process to lease it or it may be
+    done.
+    """
 
     DONE = 'DONE'
     WAITING = 'WAITING'
     LEASED = 'LEASED'
 
-    def __init__(self, list_of_experiments_path: str, lease_timout="15 seconds"):
+    def __init__(self, list_of_experiments_path: str, lease_timout='2 days'):
         """
         :param list_of_experiments_path: The path to a csv file containing all possible experiments.
         """
         self.__all_experiments = pd.read_csv(list_of_experiments_path)
         self.__all_experiments['status'] = [self.WAITING] * len(self.__all_experiments)
-        self.__all_experiments['lease_time'] = pd.Series(pd.Timestamp(float('NaN')))
+        self.__all_experiments['last_update'] = pd.Series(pd.Timestamp(float('NaN')))
         self.__all_experiments['client'] = [""] * len(self.__all_experiments)
         self.__lease_duration = pd.to_timedelta(lease_timout)
 
-        self.__non_parameter_fields = ['status', 'lease_time', 'client']
+        self.__non_parameter_fields = ['status', 'last_update', 'client']
 
     @property
-    def all_experiments(self):
+    def all_experiments(self)-> pd.DataFrame:
+        """
+        :return: The PandasFrame containing the details for all the experiments in the queue
+        """
         return self.__all_experiments
 
     def __str__(self):
@@ -47,7 +53,7 @@ class ExperimentQueue:
 
         if len(available) == 0:
             available = self.__all_experiments[(self.__all_experiments.status == self.LEASED) &
-             (self.__all_experiments.lease_time + self.__lease_duration < pd.Timestamp('now'))]
+             (self.__all_experiments.last_update + self.__lease_duration < pd.Timestamp('now'))]
 
         if len(available) == 0:
             return None
@@ -60,7 +66,7 @@ class ExperimentQueue:
             print("Re-leasing experiment %s since it expired" % selected_id)
 
         self.__all_experiments.loc[selected_id, 'status'] = self.LEASED
-        self.__all_experiments.loc[selected_id, 'lease_time'] = pd.Timestamp('now')
+        self.__all_experiments.loc[selected_id, 'last_update'] = pd.Timestamp('now')
         self.__all_experiments.loc[selected_id, 'client'] = client_name
 
         for k in self.__non_parameter_fields:
@@ -79,6 +85,6 @@ class ExperimentQueue:
             print("Experiment returned from non-leased (or expired) client")
 
         self.__all_experiments.loc[experiment_id, 'status'] = self.DONE
-        self.__all_experiments.loc[experiment_id, 'lease_time'] = pd.Timestamp('now')
+        self.__all_experiments.loc[experiment_id, 'last_update'] = pd.Timestamp('now')
         self.__all_experiments.loc[experiment_id, 'client'] = client
         # TODO: Add duration of experiment
