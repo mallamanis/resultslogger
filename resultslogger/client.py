@@ -12,7 +12,7 @@ class ResultsLoggerClient:
         self.__servername = servername
 
     @property
-    def client_name(self):
+    def client_name(self)-> str:
         """
         The name of the client
         :return:
@@ -54,18 +54,19 @@ class ResultsLoggerClient:
         :param output_stream: the file to output (default stdout)
         """
         while True:
-            print('Requesting new experiment...', file=output_stream)
+            print('[%s] Requesting new experiment...' % self.client_name, file=output_stream)
             next_experiment = self.lease_next_experiment()
             if next_experiment is None:
-                print('No more experiments available...', file=output_stream)
+                print('[%s] No more experiments available...' % self.client_name, file=output_stream)
                 break
             experiment_id, parameters = next_experiment
             print("Running with new parameters %s" % parameters, file=output_stream)
             results = result_computer(dict(parameters))
             self.store_experiment_results(experiment_id, parameters, results)
-            print("Finished experiments with parameters %s and results %s" % (parameters, results), file=output_stream)
+            print("[%s] Finished experiments with parameters %s and results %s" % (self.client_name, parameters, results), file=output_stream)
 
 
+# TODO: To remove
 import random
 cl = ResultsLoggerClient("http://localhost:5000")
 experiment_id, params = cl.lease_next_experiment()

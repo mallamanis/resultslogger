@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import pickle
 
 from flask import Flask, request
 import pystache
@@ -18,16 +19,17 @@ class ResultsLoggerServer:
 
     PAGE_TEMPLATE = load_template("resources/page.mustache")
 
-    def __init__(self, experiment_name: str, list_of_experiments_path: str, results_columns_path: str, output_filepath: str):
+    def __init__(self, experiment_name: str, list_of_experiments_path: str=None, results_columns_path: str=None,
+                 autosave_path: str='.', queue: ExperimentQueue=None, experiment_logger: ExperimentLogger=None):
         """
 
-        :param list_of_experiments:
-        :param results_columns_path:
-        :param output_filepath:
+        :param list_of_experiments_path: the path of the csv that contains all the experiments (with their parameters). Ignored if queue is not None.
+        :param results_columns_path: the path of a file that contains the columns within the results. Ignored if experiment_logger is not None.
+        :param autosave_path: the path where to autosave the results
         :param lease_timout_secs: the number of secs that a lease times out. Defaults to 2 days
         """
         self.__app = Flask(__name__)
-        self.__queue = ExperimentQueue(list_of_experiments_path)
+        self.__queue = ExperimentQueue(list_of_experiments_path) if queue is None else queue
 
         self.__renderer = pystache.Renderer()
         self.__experiment_name = experiment_name
@@ -77,18 +79,32 @@ class ResultsLoggerServer:
                                            'progress_leased': int(pct_leased) if pct_leased > 0 else False,
                                            'in_queue': True})
 
-        self.__output_filepath = output_filepath
+        self.__autosave_path = autosave_path
 
-        with open(results_columns_path) as f:
-            self.__result_columns = f.read().split()
-        self.__logger = ExperimentLogger(self.__queue.experiment_parameters, self.__result_columns)
+        if experiment_logger is None:
+            with open(results_columns_path) as f:
+                self.__result_columns = f.read().split()
+            self.__logger = ExperimentLogger(self.__queue.experiment_parameters, self.__result_columns)
+        else:
+            self.__logger = experiment_logger
 
 
     def run(self):
         self.__app.run(host='0.0.0.0')
 
     def autosave(self):
-        pass  # TODO: save to .csv .pkl and self
+        self.__logger.save_results_csv(os.path.join(self.__autosave_path, self.__experiment_name + "_results.csv"))
+        with open(os.path.join(self.__autosave_path, self.__experiment_name + ".pkl"), 'wb') as f:
+            pickle.dump((self.__queue, self.__logger), f, pickle.HIGHEST_PROTOCOL)
+
+    @staticmethod
+    def load(filename: str, experiment_name: str):
+        """
+        Load previously saved experiment data and progress.
+        """
+        with open(filename, 'rb') as f:
+            queue, experiment_logger = pickle.load(f)
+            return ResultsLoggerServer(experiment_name, queue=queue, experiment_logger=experiment_logger)
 
 
 if __name__ == "__main__":

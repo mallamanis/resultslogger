@@ -18,4 +18,4 @@ class ExperimentLogger:
         return self.__results_frame
 
     def save_results_csv(self, filename:str):
-        pass
+        self.__results_frame.to_csv(filename)
