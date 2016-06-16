@@ -43,6 +43,10 @@ class ExperimentQueue:
     def leased_percent(self):
         return float(len(self.__all_experiments[self.all_experiments.status == self.LEASED])) / len(self.__all_experiments)
 
+    @property
+    def experiment_parameters(self)-> list:
+        return [c for c in self.__all_experiments.columns if c not in self.__non_parameter_fields]
+
     def lease_new(self, client_name: str) -> tuple:
         """
         Lease a new experiment lock. Select first any waiting experiments and then re-lease expired ones

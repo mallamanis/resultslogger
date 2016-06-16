@@ -65,9 +65,14 @@ class ResultsLoggerClient:
             print("Finished experiments with parameters %s and results %s" % (parameters, results), file=output_stream)
 
 
-
+import random
 cl = ResultsLoggerClient("http://localhost:5000")
 experiment_id, params = cl.lease_next_experiment()
 print(experiment_id)
 print(params)
-cl.store_experiment_results(experiment_id, params, {'q':3, 'f':4.2})
+cl.store_experiment_results(experiment_id, params, {'name_f1':random.random(),
+                                                    'name_recall':random.random(),
+                                                    'name_precision':random.random(),
+                                                    'nargs_f1':random.random(),
+                                                    'nargs_recall':random.random(),
+                                                    'nargs_precision':random.random()})

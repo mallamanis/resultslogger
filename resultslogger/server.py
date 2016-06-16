@@ -6,6 +6,7 @@ from flask import Flask, request
 import pystache
 
 from resultslogger.constants import ResultLoggerConstants
+from resultslogger.experimentlogger import ExperimentLogger
 from resultslogger.experimentqueue import ExperimentQueue
 
 
@@ -48,11 +49,8 @@ class ResultsLoggerServer:
             results = request.form[ResultLoggerConstants.FIELD_RESULTS]
             experiment_id = request.form[ResultLoggerConstants.FIELD_EXPERIMENT_ID]
             parameters = json.loads(experiment_parameters)
-
             results = json.loads(results)
-
-            # TODO: Store experiments results appropriately
-
+            self.__logger.log_experiment(parameters, results)
             self.__queue.complete(int(experiment_id), parameters, client)
             self.autosave()
             return ResultLoggerConstants.OK
@@ -63,7 +61,7 @@ class ResultsLoggerServer:
             return self.__renderer.render(self.PAGE_TEMPLATE,
                                           {'title': 'Results Summary',
                                            'experiment_name' : self.__experiment_name,
-                                           'body': 'TODO!',
+                                           'body': self.__logger.all_results.to_html(classes=['table', 'table-striped', 'table-condensed', 'table-hover']),
                                            'in_results': True})
 
         @self.__app.route(ResultLoggerConstants.ROUTE_EXPERIMENTS_QUEUE)
@@ -83,6 +81,7 @@ class ResultsLoggerServer:
 
         with open(results_columns_path) as f:
             self.__result_columns = f.read().split()
+        self.__logger = ExperimentLogger(self.__queue.experiment_parameters, self.__result_columns)
 
 
     def run(self):
