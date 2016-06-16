@@ -50,18 +50,19 @@ class ResultsLoggerClient:
         """
         Keep asking and running new experiments, until there are no more experiments available.
         :param result_computer: a lambda that accepts a dict of parameters and returns a dict of results. The method
-        receieves a copy of the parameters.
+        receives a copy of the parameters.
         :param output_stream: the file to output (default stdout)
         """
         while True:
             print('Requesting new experiment...', file=output_stream)
-            parameters = self.lease_next_experiment()
-            if parameters is None:
+            next_experiment = self.lease_next_experiment()
+            if next_experiment is None:
                 print('No more experiments available...', file=output_stream)
                 break
+            experiment_id, parameters = next_experiment
             print("Running with new parameters %s" % parameters, file=output_stream)
             results = result_computer(dict(parameters))
-            self.store_experiment_results(parameters, results)
+            self.store_experiment_results(experiment_id, parameters, results)
             print("Finished experiments with parameters %s and results %s" % (parameters, results), file=output_stream)
 
 
