@@ -23,7 +23,7 @@ class ExperimentQueue:
         self.__all_experiments['client'] = [""] * len(self.__all_experiments)
         self.__lease_duration = pd.to_timedelta(lease_timout)
 
-        self.__non_parameter_fields = ['status', 'last_update', 'client']
+        self.__non_parameter_fields = {'status', 'last_update', 'client'}
 
     @property
     def all_experiments(self)-> pd.DataFrame:

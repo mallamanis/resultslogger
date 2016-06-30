@@ -3,7 +3,7 @@ import os
 import sys
 import pickle
 
-from flask import Flask, request
+from flask import Flask, request, make_response
 import pystache
 
 from resultslogger.constants import ResultLoggerConstants
@@ -57,14 +57,34 @@ class ResultsLoggerServer:
             self.autosave()
             return ResultLoggerConstants.OK
 
+        @self.__app.route(ResultLoggerConstants.ROUTE_EXPERIMENTS_ALL_RESULTS)
+        def show_results_html():
+            return self.__renderer.render(self.PAGE_TEMPLATE,
+                                          {'title': 'All Results',
+                                           'experiment_name' : self.__experiment_name,
+                                           'body': self.__pandas_to_html_table(self.__logger.all_results),
+                                           'summary_links': self.__get_groupby_links(set()),
+                                           'in_results': True})
+
+        @self.__app.route(ResultLoggerConstants.ROUTE_CSV_DUMP)
+        def download_csv():
+            response = make_response(self.__logger.all_results.to_csv())
+            response.headers['Content-Description'] = 'File Transfer'
+            response.headers['Cache-Control'] = 'no-cache'
+            response.headers['Content-Type'] = 'application/octet-stream'
+            response.headers['Content-Disposition'] = 'attachment; filename=%s' % self.__experiment_name+'.csv'
+            return response
+
         @self.__app.route(ResultLoggerConstants.ROUTE_EXPERIMENTS_SUMMARY)
         def show_summary_html():
-            # TODO: Pivot and Export Pandas frame to html and return content
+            group_by_values = request.args.get(ResultLoggerConstants.FIELD_GROUPBY).split(',')
             return self.__renderer.render(self.PAGE_TEMPLATE,
                                           {'title': 'Results Summary',
-                                           'experiment_name' : self.__experiment_name,
-                                           'body': self.__logger.all_results.to_html(classes=['table', 'table-striped', 'table-condensed', 'table-hover']),
-                                           'in_results': True})
+                                           'experiment_name': self.__experiment_name,
+                                           'body': self.__pandas_to_html_table(self.__logger.all_results.groupby(group_by_values).mean()),
+                                           'summary_links': self.__get_groupby_links(set(group_by_values)),
+                                           'in_summary':True
+                                           })
 
         @self.__app.route(ResultLoggerConstants.ROUTE_EXPERIMENTS_QUEUE)
         def experiment_queue_html():
@@ -73,10 +93,11 @@ class ResultsLoggerServer:
             return self.__renderer.render(self.PAGE_TEMPLATE,
                                           {'title': 'Experiments Queue',
                                            'experiment_name' : self.__experiment_name,
-                                           'body': self.__queue.all_experiments.to_html(classes=['table', 'table-striped', 'table-condensed', 'table-hover']),
+                                           'body': self.__pandas_to_html_table(self.__queue.all_experiments),
                                            'progress': pct_completed + pct_leased > 0,
                                            'progress_complete': int(pct_completed) if pct_completed > 0 else False,
                                            'progress_leased': int(pct_leased) if pct_leased > 0 else False,
+                                           'summary_links': self.__get_groupby_links(set()),
                                            'in_queue': True})
 
         self.__autosave_path = autosave_path
@@ -91,6 +112,23 @@ class ResultsLoggerServer:
 
     def run(self):
         self.__app.run(host='0.0.0.0')
+
+    def __pandas_to_html_table(self, frame):
+        return frame.to_html(classes=['table', 'table-striped', 'table-condensed', 'table-hover']).replace('border="1"', 'border="0"')
+
+    def __get_groupby_links(self, current_parameters:set)->list:
+        """The group, by links are incremental, toggle-like"""
+        def get_parameters(name_of_param)-> tuple:
+            active = name_of_param in current_parameters
+            if active:
+                params_to_use = current_parameters - {name_of_param}
+                if len(params_to_use) > 0:
+                    return ','.join(params_to_use)
+                else:
+                    return ','.join(current_parameters)
+            else:
+                return ','.join(current_parameters | {name_of_param})
+        return [{'name': n, 'link': get_parameters(n), 'active': n in current_parameters} for n in self.__queue.experiment_parameters]
 
     def autosave(self):
         self.__logger.save_results_csv(os.path.join(self.__autosave_path, self.__experiment_name + "_results.csv"))
@@ -109,7 +147,7 @@ class ResultsLoggerServer:
 
 if __name__ == "__main__":
     if len(sys.argv) != 5:
-        print("Usage <experimentName> <listOfExperiments.csv> <resultColumns> <outputPkl>")
+        print("Usage <experimentName> <listOfExperiments.csv> <resultColumns> <outputPklDirectory>")
         sys.exit(-1)
     list_of_experiments_csv_path = sys.argv[2]
     assert os.path.exists(list_of_experiments_csv_path)
