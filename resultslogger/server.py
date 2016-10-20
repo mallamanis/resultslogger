@@ -20,13 +20,15 @@ class ResultsLoggerServer:
     PAGE_TEMPLATE = load_template("resources/page.mustache")
 
     def __init__(self, experiment_name: str, list_of_experiments_path: str=None, results_columns_path: str=None,
-                 autosave_path: str='.', queue: ExperimentQueue=None, experiment_logger: ExperimentLogger=None):
+                 autosave_path: str='.', queue: ExperimentQueue=None, experiment_logger: ExperimentLogger=None,
+                 allow_unsolicited_results: bool=True):
         """
 
         :param list_of_experiments_path: the path of the csv that contains all the experiments (with their parameters). Ignored if queue is not None.
         :param results_columns_path: the path of a file that contains the columns within the results. Ignored if experiment_logger is not None.
         :param autosave_path: the path where to autosave the results
         :param lease_timout_secs: the number of secs that a lease times out. Defaults to 2 days
+        :param allow_unsolicited_results: allow clients to report results about experiments that are not in the queue/have been leased.
         """
         self.__app = Flask(__name__)
         self.__queue = ExperimentQueue(list_of_experiments_path) if queue is None else queue
@@ -53,7 +55,11 @@ class ResultsLoggerServer:
             parameters = json.loads(experiment_parameters)
             results = json.loads(results)
             self.__logger.log_experiment(parameters, results)
-            self.__queue.complete(int(experiment_id), parameters, client)
+            experiment_id = int(experiment_id)
+            if experiment_id == -1 and not self.__allow_unsolicited_results:
+                assert False, "Unsolicited experiment returned"
+            elif experiment_id >= 0:
+                self.__queue.complete(experiment_id, parameters, client)
             self.autosave()
             return ResultLoggerConstants.OK
 
@@ -101,6 +107,7 @@ class ResultsLoggerServer:
                                            'in_queue': True})
 
         self.__autosave_path = autosave_path
+        self.__allow_unsolicited_results = allow_unsolicited_results
 
         if experiment_logger is None:
             with open(results_columns_path) as f:

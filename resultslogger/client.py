@@ -66,15 +66,15 @@ class ResultsLoggerClient:
             print("[%s] Finished experiments with parameters %s and results %s" % (self.client_name, parameters, results), file=output_stream)
 
 
-# TODO: To remove
-import random
-cl = ResultsLoggerClient("http://localhost:5000")
-experiment_id, params = cl.lease_next_experiment()
-print(experiment_id)
-print(params)
-cl.store_experiment_results(experiment_id, params, {'name_f1':random.random(),
-                                                    'name_recall':random.random(),
-                                                    'name_precision':random.random(),
-                                                    'nargs_f1':random.random(),
-                                                    'nargs_recall':random.random(),
-                                                    'nargs_precision':random.random()})
+# Sample
+#import random
+#cl = ResultsLoggerClient("http://localhost:5000")
+#experiment_id, params = cl.lease_next_experiment()
+#print(experiment_id)
+#print(params)
+#cl.store_experiment_results(experiment_id, params, {'name_f1':random.random(),
+#                                                    'name_recall':random.random(),
+#                                                    'name_precision':random.random(),
+#                                                    'nargs_f1':random.random(),
+#                                                    'nargs_recall':random.random(),
+#                                                    'nargs_precision':random.random()})
