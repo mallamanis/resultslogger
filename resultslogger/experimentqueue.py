@@ -1,7 +1,6 @@
 import json
-
+from typing import Dict, List, Tuple
 import pandas as pd
-
 
 class ExperimentQueue:
     """
@@ -13,6 +12,44 @@ class ExperimentQueue:
     WAITING = 'WAITING'
     LEASED = 'LEASED'
 
+    @property
+    def all_experiments(self)-> pd.DataFrame:
+        """
+        :return: The PandasFrame containing the details for all the experiments in the queue.
+        """
+        raise NotImplementedException('Abstract Class')
+    
+
+    @property
+    def completed_percent(self) -> float:
+        raise NotImplementedException('Abstract Class')
+
+    @property
+    def leased_percent(self) -> float:
+        raise NotImplementedException('Abstract Class')
+
+    @property
+    def experiment_parameters(self)-> List:
+        raise NotImplementedException('Abstract Class')
+
+    def lease_new(self, client_name: str) -> Tuple[int, Dict]:
+        """
+        Lease a new experiment lock. Select first any waiting experiments and then re-lease expired ones
+        :param client_name: The name of the leasing client
+        :return: a tuple (id, parameters) or None if nothing is available
+        """
+        raise NotImplementedException('Abstract Class')
+
+    def complete(self, experiment_id: int, parameters: Dict, client: str, result: float=0) -> None:
+        """
+        Declare an experiment to be completed.
+        :param experiment_id: the id of the experiment or -1 if unknown
+        :param client: the client id
+        :param result: the output results of the experiment. This may be used in optimizing queues.
+        """
+        raise NotImplementedException('Abstract Class')
+
+class CsvExperimentQueue(ExperimentQueue):
     def __init__(self, list_of_experiments_path: str, lease_timout='2 days'):
         """
         :param list_of_experiments_path: The path to a csv file containing all possible experiments.
@@ -27,9 +64,6 @@ class ExperimentQueue:
 
     @property
     def all_experiments(self)-> pd.DataFrame:
-        """
-        :return: The PandasFrame containing the details for all the experiments in the queue
-        """
         return self.__all_experiments
 
     def __str__(self):
@@ -48,11 +82,6 @@ class ExperimentQueue:
         return [c for c in self.__all_experiments.columns if c not in self.__non_parameter_fields]
 
     def lease_new(self, client_name: str) -> tuple:
-        """
-        Lease a new experiment lock. Select first any waiting experiments and then re-lease expired ones
-        :param client_name: The name of the leasing client
-        :return: a tuple (id, parameters) or None if nothing is available
-        """
         available = self.__all_experiments[self.all_experiments.status == self.WAITING]
 
         if len(available) == 0:
@@ -62,7 +91,7 @@ class ExperimentQueue:
         if len(available) == 0:
             return None
 
-        #Pick the first non-leased element
+        # Pick the first non-leased element
         leased_params = json.loads(available.iloc[0].to_json())
         selected_id = int(available.index[0])
 
@@ -77,7 +106,7 @@ class ExperimentQueue:
             del leased_params[k]
         return leased_params, selected_id
 
-    def complete(self, experiment_id: int, parameters: dict, client: str):
+    def complete(self, experiment_id: int, parameters: dict, client: str, result: float):
         selected_experiment = self.__all_experiments.iloc[experiment_id]
         original_params = selected_experiment.to_dict()
 

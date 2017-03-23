@@ -15,3 +15,5 @@ class ResultLoggerConstants:
 
     OK = "OK"
     END = "END"
+
+    BASE_RESULT_FIELD = 'optimization-output-value'

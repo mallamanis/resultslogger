@@ -58,8 +58,9 @@ class ResultsLoggerServer:
             experiment_id = int(experiment_id)
             if experiment_id == -1 and not self.__allow_unsolicited_results:
                 assert False, "Unsolicited experiment returned"
-            elif experiment_id >= 0:
-                self.__queue.complete(experiment_id, parameters, client)
+            else:
+                self.__queue.complete(experiment_id, parameters, client,
+                 results[ResultLoggerConstants.BASE_RESULT_FIELD] if ResultLoggerConstants.BASE_RESULT_FIELD in results else 0.)
             self.autosave()
             return ResultLoggerConstants.OK
 
