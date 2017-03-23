@@ -4,7 +4,7 @@ class ResultLoggerConstants:
     ROUTE_STORE_EXPERIMENT = '/store_experiment'
     ROUTE_EXPERIMENTS_ALL_RESULTS = '/results'
     ROUTE_EXPERIMENTS_SUMMARY = '/resultsummary'
-    ROUTE_EXPERIMENTS_QUEUE = '/queue'
+    ROUTE_EXPERIMENTS_QUEUE = '/'
     ROUTE_CSV_DUMP= '/csvdump'
 
     FIELD_EXPERIMENT_ID = 'experimentid'
@@ -13,7 +13,7 @@ class ResultLoggerConstants:
     FIELD_RESULTS = 'results'
     FIELD_GROUPBY = 'groupby'
 
-    OK = "OK"
-    END = "END"
+    OK = 'OK'
+    END = 'END'
 
-    BASE_RESULT_FIELD = 'optimization-output-value'
+    BASE_RESULT_FIELD = 'minimized-value'

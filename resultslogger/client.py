@@ -1,6 +1,9 @@
 import os
 import socket
 import json
+from copy import copy
+from typing import Tuple, Dict, Any, Optional, Callable
+
 import requests
 import sys
 
@@ -19,7 +22,7 @@ class ResultsLoggerClient:
         """
         return str(socket.gethostname()) + "-pid:" + str(os.getpid())
 
-    def lease_next_experiment(self)-> dict:
+    def lease_next_experiment(self)-> Tuple:
         """
         Lease a new experiment to this client
         :return: a dict with the necessary parameters
@@ -32,21 +35,25 @@ class ResultsLoggerClient:
         data = r.json()
         return data['experiment_id'], data['parameters']
 
-    def store_experiment_results(self, experiment_id: int, parameters: dict, results: dict):
+    def store_experiment_results(self, experiment_id: int, parameters: Dict[str, Any], results: Dict[str, Any], minimized_result: Optional[float]=None):
         """
         Store the results of an experiment.
         :param parameters: the used parameters
         :param results: the results
         """
+        if minimized_result is not None:
+            parameters = copy(parameters)
+            parameters[ResultLoggerConstants.BASE_RESULT_FIELD] = minimized_result
         data = {ResultLoggerConstants.FIELD_CLIENT: self.client_name,
                 ResultLoggerConstants.FIELD_PARAMETERS: json.dumps(parameters),
                 ResultLoggerConstants.FIELD_RESULTS: json.dumps(results),
                 ResultLoggerConstants.FIELD_EXPERIMENT_ID: experiment_id}
+
         r = requests.post(self.__servername + ResultLoggerConstants.ROUTE_STORE_EXPERIMENT, data=data)
         assert r.status_code == requests.codes.ok, r.content
         assert r.text == ResultLoggerConstants.OK
 
-    def compute_in_loop(self, result_computer, output_stream=sys.stdout):
+    def compute_in_loop(self, result_computer: Callable[[Dict[str, Any]], Tuple[float, Dict[str, Any]]], output_stream=sys.stdout):
         """
         Keep asking and running new experiments, until there are no more experiments available.
         :param result_computer: a lambda that accepts a dict of parameters and returns a dict of results. The method
@@ -61,8 +68,8 @@ class ResultsLoggerClient:
                 break
             experiment_id, parameters = next_experiment
             print("Running with new parameters %s" % parameters, file=output_stream)
-            results = result_computer(dict(parameters))
-            self.store_experiment_results(experiment_id, parameters, results)
+            optimized_result, results = result_computer(dict(parameters))
+            self.store_experiment_results(experiment_id, parameters, (optimized_result, results))
             print("[%s] Finished experiments with parameters %s and results %s" % (self.client_name, parameters, results), file=output_stream)
 
 

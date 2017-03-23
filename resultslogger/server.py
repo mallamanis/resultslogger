@@ -8,7 +8,7 @@ import pystache
 
 from resultslogger.constants import ResultLoggerConstants
 from resultslogger.experimentlogger import ExperimentLogger
-from resultslogger.experimentqueue import ExperimentQueue
+from resultslogger.experimentqueue import ExperimentQueue, CsvExperimentQueue, BayesianOptimizedExperimentQueue
 
 
 def load_template(relative_filename: str):
@@ -19,19 +19,17 @@ class ResultsLoggerServer:
 
     PAGE_TEMPLATE = load_template("resources/page.mustache")
 
-    def __init__(self, experiment_name: str, list_of_experiments_path: str=None, results_columns_path: str=None,
-                 autosave_path: str='.', queue: ExperimentQueue=None, experiment_logger: ExperimentLogger=None,
+    def __init__(self, experiment_name: str, queue: ExperimentQueue,
+                 autosave_path: str='.',  experiment_logger: ExperimentLogger=None,
                  allow_unsolicited_results: bool=True):
         """
 
-        :param list_of_experiments_path: the path of the csv that contains all the experiments (with their parameters). Ignored if queue is not None.
-        :param results_columns_path: the path of a file that contains the columns within the results. Ignored if experiment_logger is not None.
         :param autosave_path: the path where to autosave the results
         :param lease_timout_secs: the number of secs that a lease times out. Defaults to 2 days
         :param allow_unsolicited_results: allow clients to report results about experiments that are not in the queue/have been leased.
         """
         self.__app = Flask(__name__)
-        self.__queue = ExperimentQueue(list_of_experiments_path) if queue is None else queue
+        self.__queue = queue
 
         self.__renderer = pystache.Renderer()
         self.__experiment_name = experiment_name
@@ -111,9 +109,7 @@ class ResultsLoggerServer:
         self.__allow_unsolicited_results = allow_unsolicited_results
 
         if experiment_logger is None:
-            with open(results_columns_path) as f:
-                self.__result_columns = f.read().split()
-            self.__logger = ExperimentLogger(self.__queue.experiment_parameters, self.__result_columns)
+            self.__logger = ExperimentLogger(self.__queue.experiment_parameters, [])
         else:
             self.__logger = experiment_logger
 
@@ -154,16 +150,21 @@ class ResultsLoggerServer:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 5:
-        print("Usage <experimentName> <listOfExperiments.csv> <resultColumns> <outputPklDirectory>")
+    if len(sys.argv) != 4:
+        print("Usage <experimentName> csv <listOfExperiments.csv>")
+        print("Usage <experimentName> bayesianOpt <inputSpaceParameters.???>")
         sys.exit(-1)
+
+    experiment_name = sys.argv[1]
+    queue_type = sys.argv[2]
+
+    if queue_type == 'csv':
+        queue = CsvExperimentQueue(sys.argv[3])
+    elif queue_type == 'bayesianOpt':
+        queue = BayesianOptimizedExperimentQueue(sys.argv[3])
+    else:
+        raise Exception('Unrecognized queue type %s' % queue_type)
     list_of_experiments_csv_path = sys.argv[2]
-    assert os.path.exists(list_of_experiments_csv_path)
 
-    result_columns_path = sys.argv[3]
-    assert os.path.exists(result_columns_path)
-
-    output_filepath = sys.argv[4]
-
-    logger = ResultsLoggerServer(sys.argv[1], list_of_experiments_csv_path, result_columns_path, output_filepath)
+    logger = ResultsLoggerServer(experiment_name, queue)
     logger.run()
