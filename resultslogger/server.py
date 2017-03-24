@@ -8,7 +8,8 @@ import pystache
 
 from resultslogger.constants import ResultLoggerConstants
 from resultslogger.experimentlogger import ExperimentLogger
-from resultslogger.experimentqueue import ExperimentQueue, CsvExperimentQueue, BayesianOptimizedExperimentQueue
+from resultslogger.experimentqueue import ExperimentQueue, CsvExperimentQueue
+from resultslogger.bayesoptqueue import BayesianOptimizedExperimentQueue
 
 
 def load_template(relative_filename: str):

@@ -1,6 +1,8 @@
 import json
 from typing import Dict, List, Tuple
+
 import pandas as pd
+
 
 class ExperimentQueue:
     """
@@ -125,39 +127,3 @@ class CsvExperimentQueue(ExperimentQueue):
         # TODO: Add duration of experiment
 
 
-class BayesianOptimizedExperimentQueue:
-    @property
-    def all_experiments(self) -> pd.DataFrame:
-        """
-        :return: The PandasFrame containing the details for all the experiments in the queue.
-        """
-        raise NotImplemented('Abstract Class')
-
-    @property
-    def completed_percent(self) -> float:
-        raise NotImplemented('Abstract Class')
-
-    @property
-    def leased_percent(self) -> float:
-        raise NotImplemented('Abstract Class')
-
-    @property
-    def experiment_parameters(self) -> List:
-        raise NotImplemented('Abstract Class')
-
-    def lease_new(self, client_name: str) -> Tuple[int, Dict]:
-        """
-        Lease a new experiment lock. Select first any waiting experiments and then re-lease expired ones
-        :param client_name: The name of the leasing client
-        :return: a tuple (id, parameters) or None if nothing is available
-        """
-        raise NotImplemented('Abstract Class')
-
-    def complete(self, experiment_id: int, parameters: Dict, client: str, result: float = 0) -> None:
-        """
-        Declare an experiment to be completed.
-        :param experiment_id: the id of the experiment or -1 if unknown
-        :param client: the client id
-        :param result: the output results of the experiment. This may be used in optimizing queues.
-        """
-        raise NotImplemented('Abstract Class')
