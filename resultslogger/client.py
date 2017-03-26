@@ -69,7 +69,7 @@ class ResultsLoggerClient:
             experiment_id, parameters = next_experiment
             print("Running with new parameters %s" % parameters, file=output_stream)
             optimized_result, results = result_computer(dict(parameters))
-            self.store_experiment_results(experiment_id, parameters, (optimized_result, results))
+            self.store_experiment_results(experiment_id, parameters, results, minimized_result=optimized_result)
             print("[%s] Finished experiments with parameters %s and results %s" % (self.client_name, parameters, results), file=output_stream)
 
 

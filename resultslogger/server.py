@@ -153,7 +153,7 @@ class ResultsLoggerServer:
 if __name__ == "__main__":
     if len(sys.argv) != 4:
         print("Usage <experimentName> csv <listOfExperiments.csv>")
-        print("Usage <experimentName> bayesianOpt <inputSpaceParameters.???>")
+        print("Usage <experimentName> bayesianOpt <inputSpaceParameters.json>")
         sys.exit(-1)
 
     experiment_name = sys.argv[1]
